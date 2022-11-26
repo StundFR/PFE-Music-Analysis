@@ -1,6 +1,3 @@
-DROP TABLE IF EXISTS contacts;
-DROP TABLE IF EXISTS customers;
-
 
 CREATE TABLE artist(
    id_artist INT GENERATED ALWAYS AS IDENTITY,
