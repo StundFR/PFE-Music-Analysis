@@ -1,11 +1,14 @@
 import pandas as pd
+import geopandas as gpd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 from textwrap import wrap
+from tqdm import tqdm
 
 import re
+from langdetect import detect
 import spacy
 from nltk.metrics.distance import edit_distance
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -156,7 +159,7 @@ def find_lyrics(x):
 ###############################################################################################################################
 
 def remove_translation(lyrics:str):
-    start = lyrics.split(" lyrics")[0]
+    start = lyrics.split(" Lyrics")[0]
     isUpperNum = [k for k, l in enumerate(start) if l.isupper() or l.isnumeric()]
     idx = isUpperNum[-1]
 
@@ -190,7 +193,7 @@ def check_good_lyrics_with_translation(lyrics, title, p=0.3):
 
 
 def remove_title_lyrics(lyrics:str):
-    idx = re.search(" lyrics", lyrics.lower()).span()[1]
+    idx = re.search(r" lyrics", lyrics.lower()).span()[1]
     return lyrics[idx:]
 
 
