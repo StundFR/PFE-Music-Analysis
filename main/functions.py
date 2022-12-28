@@ -12,6 +12,7 @@ from langdetect import detect
 import spacy
 from nltk.metrics.distance import edit_distance
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
 
 from bs4 import BeautifulSoup
 from requests import get
@@ -259,3 +260,25 @@ def tfidf_mat(corpus : list):
     tfidf = TfidfVectorizer()
     mat = tfidf.fit_transform(corpus)
     return pd.DataFrame(mat.toarray(), columns=tfidf.get_feature_names_out())
+
+
+###############################################################################################################################
+############################################################ ETAPE 8 ##########################################################
+###############################################################################################################################
+
+def bag_of_words(lyrics:str, nlp, stopwords = None):
+    if lyrics is np.NaN:
+        return np.NaN
+
+    if stopwords is None:
+        stopwords = nlp.Defaults.stop_words
+
+    bow = {}
+    for token in nlp(lyrics):
+        if not str(token.lemma_) in stopwords:
+            if bow.get(token.lemma_) is None:
+                bow[token.lemma_] = 1
+            else:
+                bow[token.lemma_] += 1
+    
+    return bow
