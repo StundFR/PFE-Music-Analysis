@@ -245,13 +245,6 @@ def cleanning_lyrics(row):
 ############################################################ ETAPE 7 ##########################################################
 ###############################################################################################################################
 
-def is_french(string, nlp):
-    if string is np.NaN:
-        return False
-
-    doc = nlp(string)
-    return doc.lang_ == "fr"
-
 def lematization(lyrics : str, nlp : spacy.lang):
     lyrics_lemma = [token.lemma_ for token in nlp(lyrics) if not token.is_stop]
     return " ".join(lyrics_lemma)
@@ -282,3 +275,25 @@ def bag_of_words(lyrics:str, nlp, stopwords = None):
                 bow[token.lemma_] += 1
     
     return bow
+
+
+def compare_words(df : pd.DataFrame, col : str):
+    series = {}
+    iterate = df[col].unique().tolist()
+    if np.NaN in iterate:
+        iterate.remove(np.NaN)
+
+    for t in iterate:
+        bows = {}
+
+        for bow in df[df[col] == t]["bag of words"].drop_duplicates():
+            
+            for key in bow.keys():
+                if bows.get(key) is None:
+                    bows[key] = bow[key]
+                else:
+                    bows[key] += bow[key]
+
+        series[t] = bows
+
+    return pd.DataFrame.from_dict(series).fillna(0)
