@@ -238,6 +238,8 @@ def cleanning_lyrics(row):
     if lyrics.endswith("embed"):
         lyrics = lyrics[:-5]
 
+    lyrics = lyrics.replace("you might also like", "")
+
     lyrics = lyrics.strip()
 
     return lyrics
