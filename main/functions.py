@@ -32,7 +32,6 @@ def printFull(data, nb_rows=None, nb_col=10):
     pd.reset_option('display.max_rows')
     pd.reset_option('display.max_columns')
 
-
 ###############################################################################################################################
 ############################################################ ETAPE  ##########################################################
 ###############################################################################################################################
@@ -103,8 +102,21 @@ def add_id(df : pd.DataFrame, cols : list, id_name : str):
     return df.merge(df_unique, on=cols, how="inner")
 
 ###############################################################################################################################
-############################################################ ETAPE 3 ##########################################################
+##################################################### SCRAPPING ARTIST DATA ###################################################
 ###############################################################################################################################
+#On recalcul les distances entre les noms d'artistes et les pages wikipédia pour vérifier
+def calc_dist(artist, wiki):
+    if wiki == "manuel":
+        return 0
+
+    words = ["(chanteur)", "(chanteuse)", "(groupe)", "(rappeur)", "(rappeuse)", "(musicien)", "(chanteur français)", "(france)", "(producteur)", "(artiste)", "(groupe de musique)"]
+
+    if any(w in wiki.lower() for w in words):
+        dist = edit_distance(artist.lower().strip(), wiki.lower().split(" (")[0].strip())
+        if dist/len(artist) < 0.4:
+            return dist
+    
+    return edit_distance(artist.lower().strip(), wiki.lower().strip())
 
 def pie_chart(df, col, title, na=True, legends=[], colors=["green", "red"], figsize=(3,3)):
     if na:
@@ -135,6 +147,16 @@ def category_count(cols, df, figsize=(40,7), top=10):
 ############################################################ ETAPE 4 ##########################################################
 ###############################################################################################################################
 
+def extraire_date(naissance):
+    if naissance is np.nan:
+        return np.nan, np.nan, np.nan
+    pattern = r"(\d{1,2})\s+(\w+)\s+(\d{4})"
+    match = re.search(pattern, naissance)
+    if match:
+        return match.group(1), match.group(2), match.group(3)
+    else:
+        return np.nan, np.nan, np.nan
+
 def get_nationality(data_to_check, check_list):
     if data_to_check is np.NaN:
         return np.NaN
@@ -146,6 +168,15 @@ def get_nationality(data_to_check, check_list):
             return r.lower()
     return np.NaN
 
+#Cela va permettre de normaliser les noms des pays et des nationalites
+def cleanning(data, replace_words, p=0.3):
+    if data is np.NaN:
+        return np.NaN
+    
+    distances = []
+    for r in replace_words:
+        distances.append(edit_distance(data.lower(), r.lower())/len(data))
+    return replace_words[np.argmin(distances)] if np.min(distances) < p else np.NaN
 
 #Permet de récupérer la localisation d'un artiste à partir de sa naissance ou sommaire wikipedia
 def get_localisation(row, localisation):
@@ -317,22 +348,28 @@ def bag_of_words(lyrics:str, nlp, stopwords = None):
 
 
 def compare_words(df : pd.DataFrame, col : str):
-    series = {}
+    series = []
     iterate = df[col].unique().tolist()
     if np.NaN in iterate:
         iterate.remove(np.NaN)
 
-    for t in iterate:
-        bows = {}
+    for i in iterate:
+        s = pd.DataFrame(df[df[col] == i].groupby("mot")["nb"].sum())
+        series.append(s)
 
-        for bow in df[df[col] == t]["bag of words"].drop_duplicates():
-            
-            for key in bow.keys():
-                if bows.get(key) is None:
-                    bows[key] = bow[key]
-                else:
-                    bows[key] += bow[key]
+    df = pd.concat(series, axis=1).fillna(0)
+    df.columns = iterate
+    return df
 
-        series[t] = bows
+###############################################################################################################################
+############################################################ POWER BI ##########################################################
+###############################################################################################################################
 
-    return pd.DataFrame.from_dict(series).fillna(0)
+def homogeneous_data(data_to_homogeneous, base_data_df):
+    data = base_data_df.dropna().unique().tolist()
+
+    dist = []
+    for d in data:
+        dist.append(edit_distance(data_to_homogeneous, d))
+
+    return data[np.argmin(dist)]
