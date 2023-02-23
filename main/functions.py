@@ -16,6 +16,7 @@ from sklearn.cluster import KMeans
 
 from bs4 import BeautifulSoup
 from requests import get
+import json
 import wikipedia
 import lyricsgenius as genius
 import spotipy
@@ -56,11 +57,28 @@ def find_title_in_wikipedia(title, pourcentage=0.3):
         return results[np.argmin(distance)] if min(distance)/len(title) < pourcentage else np.NaN
 
 
+def get_summary_from_wikipedia(title):
+    url = "https://fr.wikipedia.org/w/api.php"
+    params = {
+        "action": "query",
+        "format": "json",
+        "prop": "extracts",
+        "exintro": "",
+        "explaintext": "",
+        "titles": title,
+        "redirects": "",
+    }
+
+    response = get(url=url, params=params)
+    data = json.loads(response.text)
+    page = next(iter(data["query"]["pages"].values()))
+    return page["extract"].split("\n")[0]
+
 def wiki_birth(title):
     cols = ["Naissance", "Pays d'origine", "Origine", "Nationalité", "Pays", "Summary"]
     dic = {w : np.NaN for w in cols}
 
-    if title is np.NaN:
+    if title is None or title is np.NaN:
         return dic
 
     url = f"https://fr.wikipedia.org/wiki/{title}"
@@ -69,7 +87,7 @@ def wiki_birth(title):
     if not rq.ok:
         return dic
     
-    soup = BeautifulSoup(rq.text)
+    soup = BeautifulSoup(rq.text, features="html.parser")
     tables = soup.findAll("table")
 
     for table in tables:
@@ -85,12 +103,12 @@ def wiki_birth(title):
                         if td is not None:
                             dic[w] = td.text.strip().lower()
 
-    wikipedia.set_lang("fr")
-    try:
-        summary = wikipedia.summary(title, sentences=1)
-        dic["Summary"] = summary.lower().strip()
-    except:
-        pass
+    # Garde la première nationalité en cas de double nationalité
+    if not dic["Nationalité"] is np.NaN:
+        dic["Nationalité"] = dic["Nationalité"].split(" ")[0]
+
+    summary = get_summary_from_wikipedia(title)
+    dic["Summary"] = summary.lower().strip()
 
     return dic
 
