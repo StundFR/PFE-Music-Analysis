@@ -13,6 +13,7 @@ import spacy
 from nltk.metrics.distance import edit_distance
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
+from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 
 from bs4 import BeautifulSoup
 from requests import get
@@ -347,7 +348,7 @@ def tfidf_mat(corpus : list):
 ############################################################ ETAPE 9 ##########################################################
 ###############################################################################################################################
 
-def bag_of_words(lyrics:str, nlp, stopwords = None):
+def make_bag_of_words(lyrics:str, nlp, stopwords = None):
     if lyrics is np.NaN:
         return np.NaN
 
