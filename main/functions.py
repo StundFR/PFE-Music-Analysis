@@ -322,7 +322,7 @@ def get_features(row):
     
     song = sp.search(q='artist:' + artist + ' track:' + title, type='track', limit=1)
 
-    if song['tracks']['items']:
+    if (not song is None) and (song['tracks']['items']):
         features = sp.audio_features(song['tracks']['items'][0]["id"])[0]
 
         if not features is None:
@@ -343,6 +343,18 @@ def tfidf_mat(corpus : list):
     mat = tfidf.fit_transform(corpus)
     return pd.DataFrame(mat.toarray(), columns=tfidf.get_feature_names_out())
 
+# Lyrics concatenation by a column
+def lyrics_by(data, by, nlp):
+    lyrics = data.groupby(by)["lyrics"].apply(lambda x : " ".join(x.to_list()))
+    lyrics = lyrics.apply(lambda x : lematization(x, nlp))
+    return lyrics
+
+def tfidf_by(data, by, nlp):
+    lyrics = lyrics_by(data, by, nlp)
+    index = lyrics.index.to_list()
+    tfidf = tfidf_mat(lyrics)
+    tfidf.index = index
+    return tfidf
 
 ###############################################################################################################################
 ############################################################ ETAPE 9 ##########################################################
@@ -379,6 +391,13 @@ def compare_words(df : pd.DataFrame, col : str):
     df = pd.concat(series, axis=1).fillna(0)
     df.columns = iterate
     return df
+
+def plot_compare_words(df, nb_rows, nb_cols, figsize=(30,10)):
+    fig, ax = plt.subplots(nb_rows, nb_cols, figsize=figsize)
+
+    for col, ax in zip(sorted(df.columns), ax.flatten()):
+        df[col].sort_values()[-20:].plot.barh(ax=ax)
+        ax.set(title=f"{col}", xlabel="Nb", ylabel="Mots")
 
 ###############################################################################################################################
 ############################################################ POWER BI ##########################################################
